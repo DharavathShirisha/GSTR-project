@@ -1,0 +1,135 @@
+.breakdown {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 10px;
+	margin: 20px 0 24px;
+}
+
+.breakdown button {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 58px;
+	gap: 14px;
+	padding: 12px 14px;
+	border: 1px solid #d5dbd0;
+	border-radius: 4px;
+	background: #f7f8f4;
+	color: #536156;
+	font: 700 .76rem Manrope, sans-serif;
+	text-align: left;
+	cursor: pointer;
+	transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+
+.breakdown button:hover {
+	border-color: #9aa59a;
+	transform: translateY(-1px);
+}
+
+.breakdown button span {
+	line-height: 1.25;
+}
+
+.breakdown button strong {
+	display: grid;
+	place-items: center;
+	min-width: 32px;
+	height: 28px;
+	padding: 0 7px;
+	border-radius: 3px;
+	background: #e4e9df;
+	color: #15211d;
+	font: 800 .9rem 'DM Mono', monospace;
+}
+
+.breakdown button.selected {
+	border-color: #d65d36;
+	background: #fff0e9;
+	color: #ae3828;
+}
+
+.breakdown button.selected strong {
+	background: #d65d36;
+	color: #fff;
+}
+
+.accept-pos {
+	display: inline-flex;
+	align-items: center;
+	min-height: 42px;
+	margin: 4px 0 22px;
+	padding: 0 16px;
+	border: 0;
+	border-radius: 4px;
+	background: #15211d;
+	color: #fff;
+	font: 700 .78rem Manrope, sans-serif;
+	cursor: pointer;
+}
+
+.accept-pos:hover {
+	background: #327451;
+}
+
+.accept-pos:disabled {
+	opacity: .55;
+	cursor: wait;
+}
+
+.filter-note {
+	margin: -8px 0 14px;
+	color: #667168;
+	font-size: .8rem;
+}
+
+.download-report {
+	margin-top: 14px;
+	border: 1px solid #15211d;
+	border-radius: 4px;
+	background: #15211d;
+	color: #fff;
+	padding: 11px 14px;
+	font: 700 .76rem Manrope, sans-serif;
+	cursor: pointer;
+}
+
+.download-report:hover {
+	background: #327451;
+	border-color: #327451;
+}
+
+.download-complete {
+	display: block;
+	margin: 28px auto 0;
+	border: 1px solid #d65d36;
+	border-radius: 4px;
+	background: #d65d36;
+	color: #fff;
+	padding: 13px 18px;
+	font: 800 .8rem Manrope, sans-serif;
+	cursor: pointer;
+}
+
+.download-complete:hover {
+	background: #ae3828;
+	border-color: #ae3828;
+}
+
+.table-wrap {
+	max-height: 420px;
+	overflow-x: auto;
+	overflow-y: auto;
+}
+
+.table-wrap th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+@media (max-width: 560px) {
+	.breakdown {
+		grid-template-columns: 1fr;
+	}
+}

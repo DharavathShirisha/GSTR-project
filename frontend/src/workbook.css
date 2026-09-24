@@ -1,0 +1,136 @@
+.workbook-flow {
+  padding-top: 48px;
+}
+
+.workbook-results {
+  display: grid;
+  gap: 42px;
+  min-width: 0;
+}
+
+.workbook-report {
+  min-width: 0;
+}
+
+.workbook-report .table-wrap {
+  width: 100%;
+  max-height: 420px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.workbook-report .table-wrap table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.breakdown button,
+.accept-pos {
+  border: 1px solid #cbd2c6;
+  border-radius: 4px;
+  background: #f7f8f4;
+  color: #536156;
+  padding: 10px 14px;
+  font: 700 .76rem Manrope, sans-serif;
+  cursor: pointer;
+}
+
+.breakdown button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breakdown button.selected,
+.accept-pos {
+  border-color: #d65d36;
+  background: #fff0e9;
+  color: #ae3828;
+}
+
+.accept-pos {
+  margin: 0 0 14px;
+}
+
+.breakdown strong {
+  color: #15211d;
+}
+
+.workbook-report .table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.summary .metric {
+  width: 100%;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.summary .metric:hover,
+.summary .metric.selected {
+  border-color: #d65d36;
+  outline: 2px solid #d65d36;
+  outline-offset: -2px;
+}
+
+.filter-note {
+  margin: 0 0 14px;
+  color: #667168;
+  font-size: .8rem;
+}
+
+.report-downloads,
+.all-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.report-downloads button,
+.all-downloads button {
+  border: 1px solid #15211d;
+  border-radius: 4px;
+  background: #15211d;
+  color: #fff;
+  padding: 9px 12px;
+  font: 700 .74rem Manrope, sans-serif;
+  cursor: pointer;
+}
+
+.report-downloads button:hover,
+.all-downloads button:hover {
+  background: #327451;
+  border-color: #327451;
+}
+
+.all-downloads {
+  margin: 30px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid #cbd2c6;
+}
+
+.all-downloads strong {
+  margin-right: 8px;
+  font-size: .82rem;
+}
+
+@media (max-width: 760px) {
+  .workbook-flow {
+    padding-top: 35px;
+  }
+}

@@ -182,6 +182,7 @@ def validate_gstr1_workbook(
     registered_state_code: str,
     filename: str = "upload",
     accept_pos_all: bool = False,
+    accepted_pos_rows: set[int] | None = None,
 ) -> dict[str, Any]:
     try:
         workbook = pd.ExcelFile(BytesIO(contents))
@@ -216,8 +217,9 @@ def validate_gstr1_workbook(
                 results[key] = _response(source, filename, [ALIASES[field][0] for field in missing_columns])
             else:
                 validated = _b2b_validation(source, date(year, month, 1), set(), registered_state_code)
-                if accept_pos_all:
-                    accepted_rows = set(validated.index[validated["Error Type"].str.contains("POS Error", na=False)])
+                if accept_pos_all or accepted_pos_rows:
+                    pos_error_rows = set(validated.index[validated["Error Type"].str.contains("POS Error", na=False)])
+                    accepted_rows = pos_error_rows if accept_pos_all else (accepted_pos_rows or set()) & pos_error_rows
                     validated = _b2b_validation(source, date(year, month, 1), accepted_rows, registered_state_code)
                 results[key] = _response(validated, filename)
                 results[key]["error_breakdown"] = _error_breakdown(validated, ("POS Error", "Period Error", "Invoice Error"))
@@ -347,9 +349,14 @@ async def validate_gstr1(
     year: int = Form(...),
     registered_state_code: str = Form(...),
     accept_pos_all: bool = Form(False),
+    accepted_pos_rows: str = Form(""),
 ) -> dict[str, Any]:
     if not file.filename or not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=415, detail="Only Excel workbooks (.xlsx, .xls) are supported.")
+    try:
+        accepted_rows = {int(value) for value in accepted_pos_rows.split(",") if value.strip()}
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail="accepted_pos_rows must be comma-separated row numbers") from error
     return validate_gstr1_workbook(
         await file.read(),
         month,
@@ -357,4 +364,5 @@ async def validate_gstr1(
         registered_state_code,
         file.filename,
         accept_pos_all,
+        accepted_rows,
     )

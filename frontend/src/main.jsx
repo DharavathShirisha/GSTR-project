@@ -61,7 +61,7 @@ function Summary({ summary, selectedStatus, onSelect }) {
   return <div className="summary">{filters.map(([label, filter, value]) => <button className={`metric ${label.toLowerCase()} ${selectedStatus === filter ? "selected" : ""}`} key={label} onClick={() => onSelect(filter)}><span>{label}</span><strong>{value ?? 0}</strong></button>)}</div>;
 }
 
-function Report({ title, report, onAcceptPos, loading, posAccepted }) {
+function Report({ title, report, onAcceptPos, onTogglePos, loading, posAccepted }) {
   const [selectedErrorType, setSelectedErrorType] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
 
@@ -69,11 +69,16 @@ function Report({ title, report, onAcceptPos, loading, posAccepted }) {
   const rows = report.rows || [];
   const columns = report.columns || Object.keys(rows[0] || {});
   const displayColumns = title === "B2CS"
-    ? [
-        ...columns.filter((column) => !["Supply Type", "Errors", "Validation Status", "Error Type"].includes(column)),
-        ...(columns.includes("Error Type") ? ["Error Type"] : []),
-      ]
-    : columns;
+    ? columns.filter((column) => !["Supply Type", "Errors", "Validation Status", "Error Type"].includes(column))
+    : title === "B2CL"
+      ? columns.filter((column) => !["Errors", "Validation Status", "Warnings", "POS State"].includes(column))
+      : title === "B2B"
+        ? [
+            ...columns.filter((column) => !["Validation Status", "Errors", "Warnings", "POS State", "Error Type", "POS Accepted"].includes(column)),
+            ...(columns.includes("Error Type") ? ["Error Type"] : []),
+            ...(columns.includes("POS Accepted") ? ["POS Accepted"] : []),
+          ]
+      : columns;
   const visibleRows = rows.filter((row) => {
     const rowStatus = title === "B2CS"
       ? (String(row["Error Type"] || "").trim() ? "Error" : "Valid")
@@ -89,10 +94,10 @@ function Report({ title, report, onAcceptPos, loading, posAccepted }) {
     <div className="section-heading"><div><p className="eyebrow">Validation results</p><h2>{title}</h2></div><span className="row-count">{report.summary?.total ?? 0} rows</span></div>
     <Summary summary={report.summary} selectedStatus={selectedStatus} onSelect={(filter) => { setSelectedStatus(filter); setSelectedErrorType("All"); }} />
     {title === "B2B" && (report.error_breakdown?.["POS Error"] > 0 || posAccepted) && <button className="accept-pos" onClick={onAcceptPos} disabled={loading}>{loading ? "Applying POS..." : posAccepted ? "Undo POS acceptance" : "Accept POS for all errors"}</button>}
-    {report.error_breakdown && <div className="breakdown"><button className={selectedErrorType === "All" ? "selected" : ""} onClick={() => setSelectedErrorType("All")}>All errors <strong>{report.summary?.errors ?? 0}</strong></button>{Object.entries(report.error_breakdown).filter(([label]) => label !== "Tax Error").map(([label, value]) => <button className={selectedErrorType === label ? "selected" : ""} key={label} onClick={() => setSelectedErrorType(label)}><span>{label}</span><strong>{value}</strong></button>)}</div>}
+    {title !== "B2CS" && report.error_breakdown && <div className="breakdown"><button className={selectedErrorType === "All" ? "selected" : ""} onClick={() => setSelectedErrorType("All")}>All errors <strong>{report.summary?.errors ?? 0}</strong></button>{Object.entries(report.error_breakdown).filter(([label]) => label !== "Tax Error").map(([label, value]) => <button className={selectedErrorType === label ? "selected" : ""} key={label} onClick={() => setSelectedErrorType(label)}><span>{label}</span><strong>{value}</strong></button>)}</div>}
     {selectedStatus !== "All" && <p className="filter-note">Showing {visibleRows.length} {selectedStatus.toLowerCase()} row{visibleRows.length === 1 ? "" : "s"} in {title}.</p>}
     {report.missing_columns?.length > 0 && <p className="error">Missing required columns: {report.missing_columns.join(", ")}</p>}
-    <div className="table-wrap"><table><thead><tr>{displayColumns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={`${title}-${index}`}>{displayColumns.map((column) => <td key={column}>{row[column] ?? "-"}</td>)}</tr>)}</tbody></table></div>
+    <div className="table-wrap"><table><thead><tr>{displayColumns.map((column) => <th key={column}>{column === "POS Accepted" ? "Accept POS" : column}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={`${title}-${index}`}>{displayColumns.map((column) => <td key={column}>{title === "B2B" && column === "POS Accepted" ? <input type="checkbox" aria-label={`Accept POS for row ${rows.indexOf(row) + 1}`} checked={Boolean(row[column])} disabled={loading || (!row[column] && !String(row["Error Type"] || "").includes("POS Error"))} onChange={(event) => onTogglePos(rows.indexOf(row), event.target.checked)} /> : row[column] ?? "-"}</td>)}</tr>)}</tbody></table></div>
     <div className="report-downloads"><button onClick={() => downloadExcel(reportData(), `${title.toLowerCase()}_validation.xlsx`)}>Download Excel</button><button onClick={() => downloadPdf(reportData(), `${title.toLowerCase()}_validation.pdf`)}>Download PDF</button></div>
   </section>;
 }
@@ -155,9 +160,37 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/validate/gstr1`, { method: "POST", body: form });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.detail || "Unable to accept POS errors");
+      if (!response.ok) throw new Error(payload.detail || "Unable to update POS acceptance");
       setResult(payload);
       setPosAccepted(nextAccepted);
+    } catch (requestError) {
+      setError(requestError instanceof TypeError ? `Cannot reach the validation API at ${API_URL}. Start the backend on port 8000 and try again.` : requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updatePosAcceptance(rowIndex, accepted) {
+    if (!file || !result?.b2b) return;
+    const priorRows = result.b2b.rows || [];
+    const acceptedRows = new Set(priorRows.map((row, index) => row["POS Accepted"] ? index : null).filter((index) => index !== null));
+    if (accepted) acceptedRows.add(rowIndex);
+    else acceptedRows.delete(rowIndex);
+    setLoading(true);
+    setError("");
+    const form = new FormData();
+    form.append("file", file);
+    form.append("month", String(month));
+    form.append("year", String(year));
+    form.append("registered_state_code", stateCode);
+    form.append("accepted_pos_rows", [...acceptedRows].join(","));
+    try {
+      const response = await fetch(`${API_URL}/validate/gstr1`, { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || "Unable to update POS acceptance");
+      setResult(payload);
+      const candidateRows = priorRows.map((row, index) => (row["POS Accepted"] || String(row["Error Type"] || "").includes("POS Error") ? index : null)).filter((index) => index !== null);
+      setPosAccepted(candidateRows.length > 0 && candidateRows.every((index) => Boolean(payload.b2b?.rows?.[index]?.["POS Accepted"])));
     } catch (requestError) {
       setError(requestError instanceof TypeError ? `Cannot reach the validation API at ${API_URL}. Start the backend on port 8000 and try again.` : requestError.message);
     } finally {
@@ -174,6 +207,7 @@ function App() {
     setLoading(true);
     setError("");
     setResult(null);
+    setPosAccepted(false);
     const form = new FormData();
     form.append("file", file);
     form.append("month", String(month));
@@ -212,7 +246,7 @@ function App() {
       </form>
       {error && <p className="error">{error}</p>}
       {result && <>
-        <div className="workbook-results"><Report title="B2B" report={result.b2b} onAcceptPos={acceptAllPosErrors} loading={loading} posAccepted={posAccepted} /><Report title="B2CL" report={result.b2cl} /><Report title="B2CS" report={result.b2cs} /></div>
+        <div className="workbook-results"><Report title="B2B" report={result.b2b} onAcceptPos={acceptAllPosErrors} onTogglePos={updatePosAcceptance} loading={loading} posAccepted={posAccepted} /><Report title="B2CL" report={result.b2cl} /><Report title="B2CS" report={result.b2cs} /></div>
         <div className="all-downloads"><strong>Download all reports</strong><button onClick={() => downloadAll("excel")}>Excel workbook</button><button onClick={() => downloadAll("pdf")}>PDF report</button></div>
       </>}
     </section>

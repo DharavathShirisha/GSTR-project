@@ -66,20 +66,20 @@ def validate_b2cs_dataframe(
         taxable = _number(row.get(taxable_column)) if taxable_column else None
         cess = _number(row.get(cess_column)) if cess_column else None
 
-        if not pos:
-            row_errors.append("Place of Supply must begin with a two-digit state code")
-        elif pos not in STATE_CODES.values():
-            row_errors.append(f"Invalid Place of Supply state code: {pos}")
-        elif pos != registered_state_code:
-            row_errors.append(
-                f"POS Error: Place of Supply state {pos} differs from registered state {registered_state_code}"
-            )
-        if rate is None or rate < 0:
-            row_errors.append("Rate must be a non-negative number")
-        if taxable is None or taxable < 0:
-            row_errors.append("Taxable Value must be a non-negative number")
-        if cess is None or cess < 0:
-            row_errors.append("Cess Amount must be a non-negative number")
+        # if not pos:
+        #     row_errors.append("Place of Supply must begin with a two-digit state code")
+        # elif pos not in STATE_CODES.values():
+        #     row_errors.append(f"Invalid Place of Supply state code: {pos}")
+        # elif pos != registered_state_code:
+        #     row_errors.append(
+        #         f"POS Error: Place of Supply state {pos} differs from registered state {registered_state_code}"
+        #     )
+        # if rate is None or rate < 0:
+        #     row_errors.append("Rate must be a non-negative number")
+        # if taxable is None or taxable < 0:
+        #     row_errors.append("Taxable Value must be a non-negative number")
+        # if cess is None or cess < 0:
+        #     row_errors.append("Cess Amount must be a non-negative number")
 
         cgst = sgst = igst = 0.0
         supply_type = ""
@@ -108,8 +108,8 @@ def validate_b2cs_dataframe(
     output["Calculated CGST"] = calculated_cgst
     output["Calculated SGST"] = calculated_sgst
     output["Calculated IGST"] = calculated_igst
-    output["Error Type"] = [
-        "POS Error" if "POS Error:" in error else ""
-        for error in errors
-    ]
+    # output["Error Type"] = [
+    #     "POS Error" if "POS Error:" in error else ""
+    #     for error in errors
+    # ]
     return output
